@@ -35,6 +35,7 @@ int lifeBarbaro;
 int** createMatrix();
 int getIdNodo(int posX, int posY, int piso);
 void printMatriz(int** matrAdy);
+int getNodoLlave(Tile* tileList, int idLlave);
 
 void dijkstra(int** G, int startNode, int finalNode, int* distance, int* pred);
 
@@ -194,7 +195,6 @@ int main(){
   		fscanf(input ,"%s", line);
   	}
  	//Lectura de llaves
-
   	fscanf(input ,"%s", line);
   	while(strcmp(line, "monstruos") != 0){
   		int pisoLlave;
@@ -283,6 +283,7 @@ int main(){
   	int* distance= (int*)malloc(casillasTotal*sizeof(int));
   	int* pred= (int*)malloc(casillasTotal*sizeof(int));
   	int* idDoorsPassed= (int*)malloc(casillasTotal*2*sizeof(int));
+  	int* nodosLlaves= (int*)malloc(casillasTotal*2*sizeof(int));
   	int* caminoMinimo= (int*)malloc(casillasTotal*sizeof(int));
 
   	/*Impresion matriz de adyacencia con las puertas abiertas.
@@ -309,24 +310,8 @@ int main(){
   	printf("\n");
 
 
-
-  	/*//Imprimir el camino y distancia al nodo final con puertas abiertas
-  	if(distanceAbierto[idEnd] != INF){
-		printf("\nDistancia de Hrognan al nodo salida %d= %d.",idEnd,distanceAbierto[idEnd]);
-		printf("\nCamino recorrido= %d",idEnd);
-		j=idEnd;
-		do{
-			j=predAbierto[j];
-			printf("<-%d",j);
-		}while(j!= nodoBarbaro);
-		printf("\n");
-	}else{
-		printf(" Hrognan no ha podido llegar a la salida. \n");
-	}*/
-
-
-
-  	//Cerrar puertas a matriz de adyacencia para comprobar que puertas han sido atravesadas.
+  	//Asignar ids de puertas a matriz de adyacencia para comprobar que puertas han sido atravesadas
+  	//en arreglo pred.
   	
   	itDoor= doorHeadList;
   	while(itDoor != NULL){
@@ -359,6 +344,8 @@ int main(){
 		}
 		itDoor= itDoor->next;
   	}
+
+  	//Asignar ids a arreglo de puertas atravesadas. 
   	int nodoActual= nodoBarbaro;
   	int numPuertas= 0;
   	for(int i= tamCaminoMin-1; i>= 0; i--){
@@ -369,9 +356,39 @@ int main(){
   		}
   	}
 
+  	//Encontrar nodos de llaves existentes correspondientes a puertas atravesadas en camino minimo.  
+  	int numLlaves= 0;
   	for(int i= 0; i< numPuertas; i++){
-  		printf("puerta id:%d \n", idDoorsPassed[i]);
+  		int aux= getNodoLlave(tileListHead, idDoorsPassed[i]);
+  		if(aux != -1){
+  			nodosLlaves[numLlaves]= aux;
+  			numLlaves++; 
+  		}
   	}
+
+  	for(int i= 0; i< numLlaves; i++){
+  		printf("%d ", nodosLlaves[i]);
+  	}
+
+  	printf("\n");
+
+
+
+  	
+  	/*//Imprimir el camino y distancia al nodo final con puertas abiertas
+  	if(distanceAbierto[idEnd] != INF){
+		printf("\nDistancia de Hrognan al nodo salida %d= %d.",idEnd,distanceAbierto[idEnd]);
+		printf("\nCamino recorrido= %d",idEnd);
+		j=idEnd;
+		do{
+			j=predAbierto[j];
+			printf("<-%d",j);
+		}while(j!= nodoBarbaro);
+		printf("\n");
+	}else{
+		printf(" Hrognan no ha podido llegar a la salida. \n");
+	}*/
+
 
 
 
@@ -528,4 +545,15 @@ void dijkstra(int** G, int startNode, int finalNode, int* distance, int* pred){
 
 
 	
+}
+
+int getNodoLLave(Tile* tileList, int idLlave){
+	Tile* itTile= tileList;
+	while(itTile != NULL){
+		if(itTile->idLlave == idLlave){
+			return itTile->id;
+		}
+		itTile= itTile->next; 
+	}
+	return -1;
 }
