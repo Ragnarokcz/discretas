@@ -10,6 +10,7 @@
 typedef struct _Tile{
 	int posX;
 	int posY;
+	int piso;
 	int id;
 	struct _Tile* next;
 	int idLlave;
@@ -35,10 +36,11 @@ int lifeBarbaro;
 int** createMatrix();
 int getIdNodo(int posX, int posY, int piso);
 void printMatriz(int** matrAdy);
-int getNodoLlave(Tile* tileList, int idLlave);
-
+int getNodoLlave(Tile* tileList, int id);
+void printCaminoMinimo(int* caminoMinimo, int tamCaminoMinimo);
+void asignarCaminoMinimo(int* caminoMinimo, int* tamCaminoMin, int* pred, int startNode, int endNode);
+void printConclusion(int* caminoMinimo, int distance, Tile* tileList, int haLlegado);
 void dijkstra(int** G, int startNode, int finalNode, int* distance, int* pred);
-
 
 int main(){
 
@@ -64,29 +66,33 @@ int main(){
 	Tile* tileListHead= malloc(sizeof(Tile));
 	tileListHead->posX= 0;
 	tileListHead->posY= 0;
+	tileListHead->piso= 0;
 	tileListHead->id= id;
 	tileListHead->next= NULL;
 	tileListHead->idLlave= -1;
 	tileListHead->lifeMonster= 0;
 	
 	Tile* itTile= tileListHead;
-	for(int j= 0; j< alto*numPisos; j++){
-		for(int i= 0; i< ancho; i++){
-			if(i != 0 || j != 0){
-				id++;
+	for(int z= 0; z< numPisos; z++){
+		for(int j= 0; j< alto; j++){
+			for(int i= 0; i< ancho; i++){
+				if(i != 0 || j != 0 || z != 0){
+					id++;
 
-				Tile* aux= malloc(sizeof(Tile));
-				aux->posX= i;
-				aux->posY= j;
-				aux->id= id;
-				aux->next= NULL;
-				aux->idLlave= -1;
-				aux->lifeMonster= 0;
+					Tile* aux= malloc(sizeof(Tile));
+					aux->posX= i;
+					aux->posY= j;
+					aux->piso= z;
+					aux->id= id;
+					aux->next= NULL;
+					aux->idLlave= -1;
+					aux->lifeMonster= 0;
 	
 				
-				itTile->next= aux;
-				itTile= itTile->next;
-			}
+					itTile->next= aux;
+					itTile= itTile->next;
+				}
+			}	
 		}
 	}
 
@@ -114,7 +120,6 @@ int main(){
 	fscanf(input, "%d", &yEnd);
 
 	idEnd= getIdNodo(xEnd, yEnd, pisoEnd);
-	yEnd= yEnd+alto*pisoEnd;
 
 	//Agregación de muros a matriz.
 	char line[10]; 
@@ -291,25 +296,77 @@ int main(){
   	printMatriz(adyMatr);
   	*/
 
-  	//djikstra para matriz con puertas abiertas:
+  	//Agregar puertas que no tienen llave como puertas cerradas:
+  	//1-Comparar cantidad e ids de puertas existentes.
+  	int* idDoorswithKeyAvailable= (int*)malloc(casillasTotal*2*sizeof(int));
+  	int numDoorswithKey= 0;
+  	itDoor= doorHeadList;
+  	while(itDoor!= NULL){
+  		int aux= getNodoLlave(tileListHead, itDoor->id);
+  		if(aux != -1){
+  			idDoorswithKeyAvailable[numDoorswithKey]= itDoor->id;
+  			numDoorswithKey++;
+  		}
+
+  		itDoor= itDoor->next;
+  	}  	
+
+  	itDoor= doorHeadList;
+  	while(itDoor != NULL){
+  		int i= 0; 
+		int flagDoor= 0;
+		while(i < numDoorswithKey){
+			if(itDoor->id == idDoorswithKeyAvailable[i]){
+				flagDoor= 1;
+				break;
+			}
+			i++;
+		}	
+		if(!flagDoor){
+  			if(itDoor->posX1 == itDoor->posX2){
+				int numMuros= abs(itDoor->posY1 - itDoor->posY2);
+				int yMenor;
+				if(itDoor->posY2< itDoor->posY1) yMenor= itDoor->posY2;
+				else yMenor= itDoor->posY1;
+
+				for(int i= 0; i< numMuros; i++){
+					int node1= getIdNodo(itDoor->posX1-1, yMenor, itDoor->piso);
+					int node2= getIdNodo(itDoor->posX1, yMenor, itDoor->piso);
+
+					adyMatr[node1][node2]= 0;
+					adyMatr[node2][node1]= 0;
+				
+					yMenor++;
+				}
+			}else if(itDoor->posY1 == itDoor->posY2){
+				int numMuros= abs(itDoor->posX1 - itDoor->posX2);
+				int xMenor;
+				if(itDoor->posX2< itDoor->posX1) xMenor= itDoor->posX2;
+				else xMenor= itDoor->posX1;
+				for(int i= 0; i< numMuros; i++){
+					int node1= getIdNodo(xMenor, itDoor->posY1-1, itDoor->piso);
+					int node2= getIdNodo(xMenor, itDoor->posY1, itDoor->piso);
+					
+					adyMatr[node1][node2]= 0;
+					adyMatr[node2][node1]= 0;
+					
+					xMenor++;
+				}
+			}
+		}
+		itDoor= itDoor->next;
+  	}
+  	//djikstra para matriz.
   	dijkstra(adyMatr, nodoBarbaro, idEnd, distance, pred);
 
+  	//Llenado arreglo de camino minimo con el recorrido hecho para el camino minimo.
+  	int tamCaminoMin;
+  	asignarCaminoMinimo(caminoMinimo, &tamCaminoMin, pred, nodoBarbaro, idEnd);
+  	
+  	
+  	
 
-  	int aux1= idEnd, aux2= 1;
-  	caminoMinimo[0]= aux1;
-  	while(aux1!= nodoBarbaro){
-  		aux1= pred[aux1];
-  		caminoMinimo[aux2]= aux1;
-  		aux2++;	
-  	}
-  	for(int i= 0; i< aux2; i++){
-  		printf("%d ", caminoMinimo[i]);
-  	}
-  	int tamCaminoMin= aux2;
-
-  	printf("\n");
-
-
+  	
   	//Asignar ids de puertas a matriz de adyacencia para comprobar que puertas han sido atravesadas
   	//en arreglo pred.
   	
@@ -319,13 +376,15 @@ int main(){
 			int numMuros= abs(itDoor->posY1 - itDoor->posY2);
 			int yMenor;
 			if(itDoor->posY2< itDoor->posY1) yMenor= itDoor->posY2;
-			else yMenor= itDoor->posY1;		
+			else yMenor= itDoor->posY1;
+
 			for(int i= 0; i< numMuros; i++){
 				int node1= getIdNodo(itDoor->posX1-1, yMenor, itDoor->piso);
 				int node2= getIdNodo(itDoor->posX1, yMenor, itDoor->piso);
+				
 				adyMatr[node1][node2]= itDoor->id+2;
 				adyMatr[node2][node1]= itDoor->id+2;
-
+					
 				yMenor++;
 			}
 		}else if(itDoor->posY1 == itDoor->posY2){
@@ -336,9 +395,10 @@ int main(){
 			for(int i= 0; i< numMuros; i++){
 				int node1= getIdNodo(xMenor, itDoor->posY1-1, itDoor->piso);
 				int node2= getIdNodo(xMenor, itDoor->posY1, itDoor->piso);
+				
 				adyMatr[node1][node2]= itDoor->id+2;
 				adyMatr[node2][node1]= itDoor->id+2;
-
+				
 				xMenor++;
 			}
 		}
@@ -366,31 +426,140 @@ int main(){
   		}
   	}
 
-  	for(int i= 0; i< numLlaves; i++){
-  		printf("%d ", nodosLlaves[i]);
+  	//Cerrar puertas para calcular camino minimo considerando las llaves
+  	itDoor= doorHeadList;
+  	while(itDoor != NULL){
+  		if(itDoor->posX1 == itDoor->posX2){
+			int numMuros= abs(itDoor->posY1 - itDoor->posY2);
+			int yMenor;
+			if(itDoor->posY2< itDoor->posY1) yMenor= itDoor->posY2;
+			else yMenor= itDoor->posY1;
+
+			for(int i= 0; i< numMuros; i++){
+				int node1= getIdNodo(itDoor->posX1-1, yMenor, itDoor->piso);
+				int node2= getIdNodo(itDoor->posX1, yMenor, itDoor->piso);
+				
+				adyMatr[node1][node2]= 0;
+				adyMatr[node2][node1]= 0;
+					
+				yMenor++;
+			}
+		}else if(itDoor->posY1 == itDoor->posY2){
+			int numMuros= abs(itDoor->posX1 - itDoor->posX2);
+			int xMenor;
+			if(itDoor->posX2< itDoor->posX1) xMenor= itDoor->posX2;
+			else xMenor= itDoor->posX1;
+			for(int i= 0; i< numMuros; i++){
+				int node1= getIdNodo(xMenor, itDoor->posY1-1, itDoor->piso);
+				int node2= getIdNodo(xMenor, itDoor->posY1, itDoor->piso);
+				
+				adyMatr[node1][node2]= 0;
+				adyMatr[node2][node1]= 0;
+				
+				xMenor++;
+			}
+		}
+		itDoor= itDoor->next;
   	}
 
-  	printf("\n");
+  	//Comienzo calculo de caminos minimos de llaves, junto a una matriz de caminos minimos que guardara todos los 
+  	//caminos minimos para cada llave.
+  	int** distanciasLlaves= (int**)malloc(casillasTotal*sizeof(int*));
+  	for(int i= 0; i< casillasTotal; i++){
+  		distanciasLlaves[i]= (int*)malloc(casillasTotal*sizeof(int));
+  	}
+  	int** predLlaves= (int**)malloc(casillasTotal*sizeof(int*));
+  	for(int i= 0; i< casillasTotal; i++){
+  		predLlaves[i]= (int*)malloc(casillasTotal*sizeof(int));
+  	}
+  	int** caminoMinimoLlaves= (int**)malloc(casillasTotal*sizeof(int*));
+  	for(int i= 0; i< casillasTotal; i++){
+  		caminoMinimoLlaves[i]= (int*)malloc(casillasTotal*sizeof(int));
+  	}
+  	int* tamCaminoMinLlaves= (int*)malloc(casillasTotal*sizeof(int));
 
+  	int currentStartNode= nodoBarbaro;
+  	int currentEndNode;
+  	for(int i= 0; i< numLlaves; i++){
+  		currentEndNode= nodosLlaves[i];
+  		dijkstra(adyMatr, currentStartNode, currentEndNode, distanciasLlaves[0], predLlaves[0]);
+  		asignarCaminoMinimo(caminoMinimoLlaves[i], &tamCaminoMinLlaves[i], predLlaves[i], currentStartNode, currentEndNode);
+  		//Eliminacion puerta al conseguir llave de currentEndNode:
+  		itDoor= doorHeadList;
+  		itTile= tileListHead;
+  		for(int j= 0; j< nodosLlaves[i]; j++){ //Llegar a nodo que contiene la id de la llave para comparar con id de puerta
+  			itTile= itTile->next;
+  		}
 
+  		while(itDoor != NULL){
+  			if(itDoor->id == itTile->idLlave ){
+  				if(itDoor->posX1 == itDoor->posX2){
+					int numMuros= abs(itDoor->posY1 - itDoor->posY2);
+					int yMenor;
+					if(itDoor->posY2< itDoor->posY1) yMenor= itDoor->posY2;
+					else yMenor= itDoor->posY1;
 
+					for(int z= 0; z< numMuros; z++){
+						int node1= getIdNodo(itDoor->posX1-1, yMenor, itDoor->piso);
+						int node2= getIdNodo(itDoor->posX1, yMenor, itDoor->piso);
+						
+						adyMatr[node1][node2]= 1;
+						adyMatr[node2][node1]= 1;
+					
+						yMenor++;
+					}
+				}else if(itDoor->posY1 == itDoor->posY2){
+					int numMuros= abs(itDoor->posX1 - itDoor->posX2);
+					int xMenor;
+					if(itDoor->posX2< itDoor->posX1) xMenor= itDoor->posX2;
+					else xMenor= itDoor->posX1;
+					for(int z= 0; z< numMuros; z++){
+						int node1= getIdNodo(xMenor, itDoor->posY1-1, itDoor->piso);
+						int node2= getIdNodo(xMenor, itDoor->posY1, itDoor->piso);
+				
+						adyMatr[node1][node2]= 1;
+						adyMatr[node2][node1]= 1;
+				
+						xMenor++;
+					}
+				}
+  			}
+  			itDoor= itDoor->next;
+  		}
+  		currentStartNode= nodosLlaves[i];
+  	}
+  	//Camino minimo desde la ultima llave a la salida.
+  	int* distanciasLlaveFinal= (int*)malloc(casillasTotal*sizeof(int));
+  	int* predLlaveFinal= (int*)malloc(casillasTotal*sizeof(int));
+  	int* caminoMinimoLlaveFinal= (int*)malloc(casillasTotal*sizeof(int));
+  	int tamCaminoLlaveFinal;
+
+  	dijkstra(adyMatr, currentStartNode, idEnd, distanciasLlaveFinal, predLlaveFinal);
+  	asignarCaminoMinimo(caminoMinimoLlaveFinal, &tamCaminoLlaveFinal, predLlaveFinal, currentStartNode, idEnd);
   	
-  	/*//Imprimir el camino y distancia al nodo final con puertas abiertas
-  	if(distanceAbierto[idEnd] != INF){
-		printf("\nDistancia de Hrognan al nodo salida %d= %d.",idEnd,distanceAbierto[idEnd]);
-		printf("\nCamino recorrido= %d",idEnd);
-		j=idEnd;
-		do{
-			j=predAbierto[j];
-			printf("<-%d",j);
-		}while(j!= nodoBarbaro);
-		printf("\n");
-	}else{
-		printf(" Hrognan no ha podido llegar a la salida. \n");
-	}*/
+  	//Check si es que es posible llegar a la meta.	
+  	int haLlegado= 0;
+  	if(distanciasLlaveFinal[idEnd] != INF){
+  		haLlegado= 1;
+  	}
 
+  	//Este es el camino minimo final que consiste en la suma de todos los caminos minimos entre llaves  y el camino minimo hasta el final.
+  	int* caminoMinimoFinal= (int*)malloc(casillasTotal*sizeof(int));
+  	for(int i= 0; i< tamCaminoLlaveFinal; i++){
+  		caminoMinimoFinal[i]= caminoMinimoLlaveFinal[i];
+  	}
+  	int aux= tamCaminoLlaveFinal;
+  	int caminoMinimoFinalTam= aux;
+  	for(int i= 0; i< numLlaves; i++){
+  		for(int j= 1; j< tamCaminoMinLlaves[i]; j++){
+  			caminoMinimoFinal[aux]= caminoMinimoLlaves[i][j];  
+  			aux++; 
+  			caminoMinimoFinalTam++;
+  		}
+  	}
+  	int distanceFinal= caminoMinimoFinalTam-1;
 
-
+  	printConclusion(caminoMinimoFinal, distanceFinal, tileListHead, haLlegado);
 
 	return 0;
 }
@@ -547,13 +716,52 @@ void dijkstra(int** G, int startNode, int finalNode, int* distance, int* pred){
 	
 }
 
-int getNodoLLave(Tile* tileList, int idLlave){
+int getNodoLlave(Tile* tileList, int id){
 	Tile* itTile= tileList;
 	while(itTile != NULL){
-		if(itTile->idLlave == idLlave){
+		if(itTile->idLlave == id){
 			return itTile->id;
 		}
 		itTile= itTile->next; 
 	}
 	return -1;
 }
+
+void printCaminoMinimo(int* caminoMinimo, int tamCaminoMin){	
+  	for(int i= 0; i< tamCaminoMin; i++){
+  		printf("%d ", caminoMinimo[i]);
+  	}
+  	printf("\n");
+}
+
+void asignarCaminoMinimo(int* caminoMinimo, int* tamCaminoMin, int* pred, int startNode, int endNode){
+	int aux1= endNode, aux2= 1;
+  	caminoMinimo[0]= aux1;
+  	while(aux1!= startNode){
+  		aux1= pred[aux1];
+  		caminoMinimo[aux2]= aux1;
+  		aux2++;	
+  	}
+  	*tamCaminoMin= aux2;
+}
+
+void printConclusion(int* caminoMinimo, int distance, Tile* tileList, int haLlegado){
+	Tile* itTile= tileList;
+	if(haLlegado){
+		printf("El camino mínimo que debe seguir Hrognan toma %d movimientos en llegar a la salida. \n", distance);
+		for(int i= distance; i>= 0; i--){
+			itTile= tileList;
+			while(itTile!=NULL){
+				if(itTile->id == caminoMinimo[i]){
+					printf("[%d, %d, %d] \n", itTile->piso, itTile->posX, itTile->posY);
+					break;
+				}else{
+					itTile= itTile->next;
+				}
+			}
+		}
+	}else{
+		printf("Hrognan no ha podido llegar a la salida. \n ");
+	}
+}
+
