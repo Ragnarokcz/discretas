@@ -36,7 +36,7 @@ int** createMatrix();
 int getIdNodo(int posX, int posY, int piso);
 void printMatriz(int** matrAdy);
 
-void dijkstra(int** G, int n, int startNode, int finalNode, int* distance, int* pred);
+void dijkstra(int** G, int startNode, int finalNode, int* distance, int* pred, int* idDoorsPassed, int* numPuertas);
 
 
 int main(){
@@ -161,7 +161,6 @@ int main(){
   	}
 
   	//Lectura de puertas
-  	
 	Door* doorHeadList= malloc(sizeof(Door));
 	fscanf(input, "%s", line);
 
@@ -176,11 +175,12 @@ int main(){
 
   		fscanf(input ,"%s", line);
 	}
+
   	Door* itDoor= doorHeadList;
 
   	while(strcmp(line, "llaves") != 0){ //Aqui se guardan los datos de las puertas que serán usados mas adelante.
   		Door* aux= malloc(sizeof(Door));
-  		itDoor->id= atoi(line);
+  		aux->id= atoi(line);
   		fscanf(input ,"%d", &aux->piso);
   		fscanf(input ,"%d", &aux->posX1);
   		fscanf(input ,"%d", &aux->posY1);
@@ -193,8 +193,7 @@ int main(){
 
   		fscanf(input ,"%s", line);
   	}
-
-  	//Lectura de llaves
+ 	//Lectura de llaves
 
   	fscanf(input ,"%s", line);
   	while(strcmp(line, "monstruos") != 0){
@@ -279,22 +278,48 @@ int main(){
   	//--- FIN LECTURA --- 
 
   	//--- COMIENZO CALCULO CAMINO MINIMO ---
-  	int* distance= (int*)malloc(casillasTotal*sizeof(int));
-  	int* pred= (int*)malloc(casillasTotal*sizeof(int));
 
-  	//Impresion matriz de adyacencia con las puertas abiertas.
-  	//printf("Matriz de adyacencia con puertas abiertas: \n");
-  	//printMatriz(adyMatr);
+
+  	//int* distanceAbierto= (int*)malloc(casillasTotal*sizeof(int));
+  	//int* predAbierto= (int*)malloc(casillasTotal*sizeof(int));
+  	
+
+  	/*Impresion matriz de adyacencia con las puertas abiertas.
+  	printf("Matriz de adyacencia con puertas abiertas: \n");
+  	printMatriz(adyMatr);
+  	*/
 
   	//djikstra para matriz con puertas abiertas:
-  	dijkstra(adyMatr, casillasTotal, nodoBarbaro, idEnd, distance, pred); 
+  	/*dijkstra(adyMatr, nodoBarbaro, idEnd, distanceAbierto, predAbierto, idDoorsPassed); 
+
+  	//Imprimir el camino y distancia al nodo final con puertas abiertas
+  	if(distanceAbierto[idEnd] != INF){
+		printf("\nDistancia de Hrognan al nodo salida %d= %d.",idEnd,distanceAbierto[idEnd]);
+		printf("\nCamino recorrido= %d",idEnd);
+		int j=idEnd;
+		do{
+			j=predAbierto[j];
+			printf("<-%d",j);
+		}while(j!= nodoBarbaro);
+		printf("\n");
+	}else{
+		printf(" Hrognan no ha podido llegar a la salida. \n");
+	}*/
 
 
-  	//Cerrar puertas a matriz de adyacencia y asignar nodos a Doors.
+
+  	/*printf(" nodos predecesores:  \n");
+  	for(int i= 0; i< casillasTotal; i++){
+  		printf(" %d ", pred[i]);
+  	}
+  	printf("\n");*/
+
+
+
+  	//Cerrar puertas a matriz de adyacencia.
+  	
   	itDoor= doorHeadList;
   	while(itDoor != NULL){
-  		int currX1= itDoor->posX1;
-		int currY1= itDoor->posY1;
   		if(itDoor->posX1 == itDoor->posX2){
 			int numMuros= abs(itDoor->posY1 - itDoor->posY2);
 			int yMenor;
@@ -303,9 +328,8 @@ int main(){
 			for(int i= 0; i< numMuros; i++){
 				int node1= getIdNodo(itDoor->posX1-1, yMenor, itDoor->piso);
 				int node2= getIdNodo(itDoor->posX1, yMenor, itDoor->piso);
-
-				adyMatr[node1][node2]= 0;
-				adyMatr[node2][node1]= 0;
+				adyMatr[node1][node2]= itDoor->id+2;
+				adyMatr[node2][node1]= itDoor->id+2;
 
 				yMenor++;
 			}
@@ -317,9 +341,8 @@ int main(){
 			for(int i= 0; i< numMuros; i++){
 				int node1= getIdNodo(xMenor, itDoor->posY1-1, itDoor->piso);
 				int node2= getIdNodo(xMenor, itDoor->posY1, itDoor->piso);
-
-				adyMatr[node1][node2]= 0;
-				adyMatr[node2][node1]= 0;
+				adyMatr[node1][node2]= itDoor->id+2;
+				adyMatr[node2][node1]= itDoor->id+2;
 
 				xMenor++;
 			}
@@ -329,10 +352,34 @@ int main(){
 
   	//Impresion matriz de adyacencia con las puertas cerradas.
   	//printf("Matriz de adyacencia con puertas cerradas: \n");
-  	//printMatriz(adyMatr);
+  	printMatriz(adyMatr);
+
+  	int* distanceCerrado= (int*)malloc(casillasTotal*sizeof(int));
+  	int* predCerrado= (int*)malloc(casillasTotal*sizeof(int));
+  	int* idDoorsPassed= (int*)malloc(casillasTotal*2*sizeof(int));
+  	int numPuertas= 0; 
+  	
 
   	//dijkstra para matriz con puertas cerradas.
-  	dijkstra(adyMatr, casillasTotal, nodoBarbaro, idEnd, distance, pred);
+  	dijkstra(adyMatr, nodoBarbaro, idEnd, distanceCerrado, predCerrado, idDoorsPassed, &numPuertas);
+
+  	for(int i= 0; i< numPuertas; i++){
+  		printf("puerta id:%d \n", idDoorsPassed[i]);
+  	}
+
+  	//Imprimir el camino y distancia al nodo final con puertas abiertas
+  	if(distanceCerrado[idEnd] != INF){
+		printf("\nDistancia de Hrognan al nodo salida %d= %d.",idEnd,distanceCerrado[idEnd]);
+		printf("\nCamino recorrido= %d",idEnd);
+		int j=idEnd;
+		do{
+			j=predCerrado[j];
+			printf("<-%d",j);
+		}while(j!= nodoBarbaro);
+		printf("\n");
+	}else{
+		printf(" Hrognan no ha podido llegar a la salida. \n");
+	}
 
 
 	return 0;
@@ -417,60 +464,75 @@ void printMatriz(int** matrAdy){
 	}
 }
 
-void dijkstra(int** G,int n,int startnode, int finalNode, int* distance, int* pred){
+void dijkstra(int** G, int startNode, int finalNode, int* distance, int* pred, int* idDoorsPassed, int* numPuertas){
 	int cost[casillasTotal][casillasTotal];
-	int visited[casillasTotal],count,mindistance,nextnode,i,j;
+	int visited[casillasTotal], count, minDistance, nextNode, i, j;
 	
-	//pred[] stores the predecessor of each node
-	//count gives the number of nodes seen so far
-	//create the cost matrix
-	for(i=0;i<n;i++)
-		for(j=0;j<n;j++)
-			if(G[i][j]==0)
-				cost[i][j]=INF;
+	//pred guarda el predecesor de cada nodo
+	//count da el numero de nodos visitados
+	//Crear la matriz de costes
+	for(i= 0;i< casillasTotal; i++)
+		for(j= 0;j< casillasTotal; j++)
+			if(G[i][j]== 0)
+				cost[i][j]= INF;
 			else
-				cost[i][j]=G[i][j];	
+				cost[i][j]= G[i][j];	
 	
-	//initialize pred[],distance[] and visited[]
-	for(i=0;i<n;i++){
-		distance[i]=cost[startnode][i];
-		pred[i]=startnode;
-		visited[i]=0;
+	//Inicializar pred, distance, visited.
+	for(i= 0;i< casillasTotal; i++){
+		//Si se encuentra una puerta al lado del nodo inicial, la id de esta puerta se guarda en el arreglo de puertas 
+		//atravesadas, y se asigna un valor INF a la distancia del nodo inicial a ese nodo porque hay una puerta de por
+		//medio.
+		if(cost[startNode][i] == 1 || cost[startNode][i] == INF){
+			distance[i]= cost[startNode][i];
+		}else{
+			distance[i]= INF;
+			idDoorsPassed[*numPuertas]= cost[startNode][i]-2;
+			*numPuertas= *numPuertas+1;
+		}
+		pred[i]= startNode;
+		visited[i]= 0;
 	}
 	
-	distance[startnode]=0;	
-	visited[startnode]=1;
+	distance[startNode]=0;	
+	visited[startNode]=1;
 	count=1;
-	
-	while(count<n-1){
-		mindistance=INF;
-		
-		//nextnode gives the node at minimum distance
-		for(i=0;i<n;i++){
-			if(distance[i]<mindistance&&!visited[i]){
-				mindistance=distance[i];
-				nextnode=i;
-			}
-		}
-			visited[nextnode]=1;
 
-			//check if a better path exists through nextnode			
-			for(i=0;i<n;i++){
-				if(!visited[i]){
-					if(mindistance+cost[nextnode][i]<distance[i]){
-						distance[i]=mindistance+cost[nextnode][i];
-						pred[i]=nextnode;
-					}
+	
+	while(count< casillasTotal-1){
+		minDistance= INF;
+		
+		//nextNode es el nodo a distancia minima, el cual es obtenido despues de comparar la distancia minima actual con la distancia al nodo
+		for(i= 0;i< casillasTotal; i++){
+			if(distance[i]< minDistance && !visited[i]){
+				minDistance= distance[i];
+				nextNode= i;
+			}
+		} 
+		//Si el nodo visitado y su predecesor tienen una puerta entremedio, se guarda la id en el vector de ids de puertas y se agrega distancia INF entre estos nodos.
+		if(cost[pred[nextNode]][nextNode] != INF && cost[pred[nextNode]][nextNode] != 1 && 
+		   cost[nextNode][pred[nextNode]] != INF && cost[nextNode][ pred[nextNode] ] != 1){
+			idDoorsPassed[*numPuertas]= cost[ pred[nextNode] ][nextNode]-2;
+			*numPuertas= *numPuertas+1;
+			cost[pred[nextNode]][nextNode]= INF;
+			cost[nextNode][pred[nextNode]]= INF;
+		}
+		count++;
+
+		visited[nextNode]= 1;
+		
+		//Checkea si existe un mejor camino através de nextNode, es decir, compara con los nodos aun no visitados la distancia.		
+		for(i= 0; i< casillasTotal; i++){
+			if(!visited[i]){
+				if(minDistance + cost[nextNode][i] < distance[i]){
+					distance[i]= minDistance + cost[nextNode][i];
+					pred[i]= nextNode;
 				}
 			}
-		count++;
-	}
+		}
 
-	if(distance[finalNode] == INF ){
-		printf(" Hrognan no ha podido llegar a la salida. \n");
-		return;
+		
 	}
-
 	//Imprimir el camino y distancia hacia cada nodo
 	/*for(i=0;i<n;i++)
 		if(i!=startnode)
@@ -487,14 +549,5 @@ void dijkstra(int** G,int n,int startnode, int finalNode, int* distance, int* pr
 	}*/
 
 
-	//Imprimir el camino y distancia al nodo final
-	printf("\nDistancia de Hrognan al nodo salida %d= %d.",finalNode,distance[finalNode]);
-	printf("\nCamino recorrido= %d",finalNode);
-	j=finalNode;
-	do{
-		j=pred[j];
-		printf("<-%d",j);
-	}while(j!=startnode);
-
-	printf("\n");
+	
 }
