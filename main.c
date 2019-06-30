@@ -49,14 +49,13 @@ int main(){
 	while(onCastle){
   printf("Ingresar vidas de Hrognan: \n");
 	scanf("%d", &lifeBarbaro);
-  printf("%d ", lifeBarbaro);
   FILE* input;
   char file_name[20];
-	printf("Ingresar nombre de archivo a leer: \n");
-	scanf("%s", file_name);
+  printf("Ingresar nombre de archivo a leer: \n");
+  scanf("%s", file_name);
   input= fopen(file_name, "r");
   while(input== NULL){
-    //system("clear");
+    system("clear");
     printf("El archivo no existe, porfavor reingrese el nombre.\n");
     scanf("%s", file_name);
     input= fopen(file_name,"r");
