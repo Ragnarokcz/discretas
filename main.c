@@ -43,16 +43,24 @@ void printConclusion(int* caminoMinimo, int distance, Tile* tileList, int haLleg
 void dijkstra(int** G, int startNode, int finalNode, int* distance, int* pred);
 
 int main(){
-
+  system("clear");
+  int onCastle= 1;
 	//Lectura de archivo y vida de Hrognan
-	printf("Ingresar vidas de Hrognan: \n");
+	while(onCastle){
+  printf("Ingresar vidas de Hrognan: \n");
 	scanf("%d", &lifeBarbaro);
-	
-	FILE* input;
-	char file_name[20];
+  printf("%d ", lifeBarbaro);
+  FILE* input;
+  char file_name[20];
 	printf("Ingresar nombre de archivo a leer: \n");
 	scanf("%s", file_name);
-    input= fopen(file_name, "r");
+  input= fopen(file_name, "r");
+  while(input== NULL){
+    //system("clear");
+    printf("El archivo no existe, porfavor reingrese el nombre.\n");
+    scanf("%s", file_name);
+    input= fopen(file_name,"r");
+  }
 	fscanf(input, "%d", &numPisos);
 	fscanf(input, "%d", &ancho);
 	fscanf(input, "%d", &alto);
@@ -291,13 +299,9 @@ int main(){
   	int* nodosLlaves= (int*)malloc(casillasTotal*2*sizeof(int));
   	int* caminoMinimo= (int*)malloc(casillasTotal*sizeof(int));
 
-  	/*Impresion matriz de adyacencia con las puertas abiertas.
-  	printf("Matriz de adyacencia con puertas abiertas: \n");
-  	printMatriz(adyMatr);
-  	*/
 
   	//Agregar puertas que no tienen llave como puertas cerradas:
-  	//1-Comparar cantidad e ids de puertas existentes.
+  	//1-Comparar cantidad e ids de puertas existentes con llaves existentes.
   	int* idDoorswithKeyAvailable= (int*)malloc(casillasTotal*2*sizeof(int));
   	int numDoorswithKey= 0;
   	itDoor= doorHeadList;
@@ -362,7 +366,6 @@ int main(){
   	//Llenado arreglo de camino minimo con el recorrido hecho para el camino minimo.
   	int tamCaminoMin;
   	asignarCaminoMinimo(caminoMinimo, &tamCaminoMin, pred, nodoBarbaro, idEnd);
-  	
   	
   	
 
@@ -537,11 +540,7 @@ int main(){
   	dijkstra(adyMatr, currentStartNode, idEnd, distanciasLlaveFinal, predLlaveFinal);
   	asignarCaminoMinimo(caminoMinimoLlaveFinal, &tamCaminoLlaveFinal, predLlaveFinal, currentStartNode, idEnd);
   	
-  	//Check si es que es posible llegar a la meta.	
-  	int haLlegado= 0;
-  	if(distanciasLlaveFinal[idEnd] != INF){
-  		haLlegado= 1;
-  	}
+  	
 
   	//Este es el camino minimo final que consiste en la suma de todos los caminos minimos entre llaves  y el camino minimo hasta el final.
   	int* caminoMinimoFinal= (int*)malloc(casillasTotal*sizeof(int));
@@ -559,7 +558,46 @@ int main(){
   	}
   	int distanceFinal= caminoMinimoFinalTam-1;
 
+
+  	for(int i= caminoMinimoFinalTam-1; i>=0; i--){
+  		itTile= tileListHead;
+  		while(itTile!=NULL){
+  			if(itTile->id == caminoMinimoFinal[i]){
+  				if(itTile->lifeMonster != 0){
+  					lifeBarbaro-= itTile->lifeMonster;
+  				}
+  				break;
+  			}
+  			itTile= itTile->next;	
+  		}
+  	}
+  	
+  	printCaminoMinimo(caminoMinimoFinal, caminoMinimoFinalTam);
+
+
+  	//Check si es que es posible llegar a la meta.	
+  	int haLlegado= 0;
+  	if(distanciasLlaveFinal[idEnd] != INF && lifeBarbaro > 0){
+  		haLlegado= 1;
+  	}
+
   	printConclusion(caminoMinimoFinal, distanceFinal, tileListHead, haLlegado);
+
+
+    //Seleccion nuevo archivo.
+    int answer= 0;
+    printf("¿Desea ingresar un nuevo castillo? \n ");
+    printf("Presione 1 para seleccionar un nuevo castillo \n");
+    printf("Presione 2 para terminar el programa \n");
+    while(answer != 1 && answer!= 2){
+      scanf(" %d", &answer );
+    }
+    if(answer == 1){
+      onCastle= 1;
+    }else{
+      onCastle= 0;
+    }
+  }
 
 	return 0;
 }
@@ -697,23 +735,6 @@ void dijkstra(int** G, int startNode, int finalNode, int* distance, int* pred){
 
 		
 	}
-	//Imprimir el camino y distancia hacia cada nodo
-	/*for(i=0;i<n;i++)
-		if(i!=startnode)
-		{
-			printf("\nDistance of node%d=%d",i,distance[i]);
-			printf("\nPath=%d",i);
-			
-			j=i;
-			do
-			{
-				j=pred[j];
-				printf("<-%d",j);
-			}while(j!=startnode);
-	}*/
-
-
-	
 }
 
 int getNodoLlave(Tile* tileList, int id){
@@ -748,7 +769,7 @@ void asignarCaminoMinimo(int* caminoMinimo, int* tamCaminoMin, int* pred, int st
 void printConclusion(int* caminoMinimo, int distance, Tile* tileList, int haLlegado){
 	Tile* itTile= tileList;
 	if(haLlegado){
-		printf("El camino mínimo que debe seguir Hrognan toma %d movimientos en llegar a la salida. \n", distance);
+		printf("El camino mínimo que debe seguir Hrognan toma %d movimientos en llegar a la salida. Ha llegado con %d vidas. \n", distance, lifeBarbaro);
 		for(int i= distance; i>= 0; i--){
 			itTile= tileList;
 			while(itTile!=NULL){
